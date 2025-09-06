@@ -7,10 +7,9 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
-public class UserListener {
-    private static final Logger logger = LoggerFactory.getLogger(UserListener.class);
-    @RabbitListener(queues = "versapath.user.created")
+public class CreateUserListener {
+    private static final Logger logger = LoggerFactory.getLogger(CreateUserListener.class);
+   @RabbitListener(queues = "versapath.user.created")
     public void handleMoodleUserCreation(String userEvent) {
         // TODO: create user to moodle
         logger.info("Start creating user: {}", userEvent);
