@@ -1,8 +1,12 @@
 package com.capstone.lms_service.service;
 
 import com.capstone.lms_service.dto.UserRequestDto;
+import com.capstone.lms_service.dto.MoodleErrorResponse;
+import com.capstone.lms_service.exception.MoodleException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -18,13 +22,13 @@ import java.util.Collections;
 @RequiredArgsConstructor
 public class UserService {
     private final RestTemplate restTemplate = new RestTemplate();
-
+    private final ObjectMapper objectMapper = new ObjectMapper(); // convert json-object
     @Value("${MOODLE_URL}")
     private String moodleUrl;
 
     @Value("${WEBSERVICE_TOKEN}")
     private String token;
-    public String createUser(UserRequestDto userDto) {
+    public String createUser(UserRequestDto userDto) throws JsonProcessingException {
 
         String url = moodleUrl + "?wstoken=" + token + "&wsfunction=core_user_create_users&moodlewsrestformat=json";
 
@@ -37,6 +41,7 @@ public class UserService {
         params.add("users[0][email]", userDto.getEmail());
         params.add("users[0][auth]", "manual");
 
+        // set http header to send a request
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
         headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
@@ -44,7 +49,19 @@ public class UserService {
         HttpEntity<MultiValueMap<String, String>> request =
                 new HttpEntity<>(params, headers);
 
-        return restTemplate.postForObject(url, request, String.class);
+        /* moodle success response: [{"id": 42, "username": "username"}]
+           moodle error response: {"exception":"","errorcode":"","message":"","debuginfo":""}
+         */
+        String response = restTemplate.postForObject(url, request, String.class); // post
+
+        // Check whether it's an object or array response before deserialization
+        JsonNode root = objectMapper.readTree(response); //
+        if (root.isObject() && root.has("errorcode")) {
+            MoodleErrorResponse error = objectMapper.treeToValue(root, MoodleErrorResponse.class);
+            throw new MoodleException(error.getMessage());
+        }
+
+        return response;
     }
 
 }
