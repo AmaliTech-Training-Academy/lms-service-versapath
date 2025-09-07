@@ -33,4 +33,10 @@ public class RabbitMQConfig {
         return new Queue("versapath.user.update", true);
     }
 
+    @Bean
+    public Queue updateSkillQueue() {
+        return new Queue("versapath.skill.update", true);
+    }
+
+
 }

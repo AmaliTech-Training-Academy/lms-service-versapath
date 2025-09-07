@@ -2,7 +2,7 @@ package com.capstone.lms_service.service.impl;
 
 import com.capstone.lms_service.dto.MoodleCourseResponse;
 import com.capstone.lms_service.dto.MoodlePageResponse;
-import com.capstone.lms_service.exception.MoodleException;
+import com.capstone.lms_service.messaging.UpdateSkillProducer;
 import com.capstone.lms_service.service.CourseService;
 import com.capstone.lms_service.util.MoodleHttpRequest;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -11,6 +11,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.common.event.CreateSkillEvent;
+import org.common.event.SkillAtom;
+import org.common.event.UpdateSkillEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -22,7 +26,9 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class MoodleCourseService implements CourseService {
+    private static final Logger logger = LoggerFactory.getLogger(MoodleCourseService.class);
     private final ObjectMapper objectMapper = new ObjectMapper(); // convert json-object
+    private final UpdateSkillProducer updateSkillProducer;
     MoodleHttpRequest moodleHttpRequest = new MoodleHttpRequest();
 
     @Value("${MOODLE_URL}")
@@ -38,7 +44,10 @@ public class MoodleCourseService implements CourseService {
     public MoodleCourseResponse createMoodleCourseStructure(CreateSkillEvent skillEvent) throws JsonProcessingException {
         MoodleCourseResponse insertedCourse = createCourse(skillEvent.getCapsuleName()); // first create a course
         List<MoodlePageResponse> insertedPage = createPage(insertedCourse.getId(), skillEvent.getAtoms()); // create pages inside a course
+
         insertedCourse.setMoodlePages(insertedPage);
+        sendEventCommandToUpdateSkillData(insertedCourse); // send updated skills data with Moodle info
+
         return insertedCourse;
     }
 
@@ -64,6 +73,8 @@ public class MoodleCourseService implements CourseService {
                 new TypeReference<>() {}
         );
 
+        logger.info("Course created successfule: {}", courses.get(0).getShortname());
+
         return courses.get(0);
     }
 
@@ -73,7 +84,7 @@ public class MoodleCourseService implements CourseService {
 
         List<MoodlePageResponse> pageResponseList = new ArrayList<>();
 
-        for (String atom : atoms) {
+        for(String atom : atoms) {
 
             MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
             params.add("courseid", courseId.toString());
@@ -87,10 +98,34 @@ public class MoodleCourseService implements CourseService {
             MoodlePageResponse response = objectMapper.treeToValue(root, MoodlePageResponse.class);
 
             pageResponseList.add(response);
+            logger.info("Page created successfule: {}", response.getName());
 
         }
 
+
         return pageResponseList;
+    }
+
+    void sendEventCommandToUpdateSkillData(MoodleCourseResponse insertedCourse){
+        List<SkillAtom> skillAtoms = new ArrayList<>();
+        // map Versapath skill atom to Moodle page
+        for(MoodlePageResponse page: insertedCourse.getMoodlePages()){
+            SkillAtom skillAtom = SkillAtom.builder()
+                    .name(page.getName())
+                    .courseModuleId(page.getCmid())
+                    .pageId(page.getInstance())
+                    .build();
+
+            skillAtoms.add(skillAtom);
+        }
+        // map Versapath skill capsule to Moodle course
+        UpdateSkillEvent updateSkillEvent = UpdateSkillEvent.builder()
+                .courseId(insertedCourse.getId())
+                .name(insertedCourse.getShortname())
+                .skillAtoms(skillAtoms)
+                .build();
+
+        updateSkillProducer.sendUpdateSkillsCommand(updateSkillEvent);
     }
 
 }
