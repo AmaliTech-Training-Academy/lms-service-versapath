@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -13,4 +15,5 @@ public class MoodleCourseResponse {
     private Long id;
     private String shortname;
     private String fullname;
+    List<MoodlePageResponse> moodlePages;
 }
