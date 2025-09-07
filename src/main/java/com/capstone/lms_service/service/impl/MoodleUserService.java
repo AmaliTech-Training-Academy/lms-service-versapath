@@ -2,10 +2,9 @@ package com.capstone.lms_service.service.impl;
 
 import com.capstone.lms_service.dto.MoodleUserResponse;
 import com.capstone.lms_service.dto.UserRequestDto;
-import com.capstone.lms_service.dto.MoodleErrorResponse;
-import com.capstone.lms_service.exception.MoodleException;
 import com.capstone.lms_service.messaging.UpdateUserProducer;
 import com.capstone.lms_service.service.UserService;
+import com.capstone.lms_service.util.MoodleHttpRequest;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -13,22 +12,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.common.event.producer.UpdateUserEvent;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.RestTemplate;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class MoodleUserService implements UserService {
-    private final RestTemplate restTemplate = new RestTemplate();
+    MoodleHttpRequest moodleHttpRequest = new MoodleHttpRequest();
     private final ObjectMapper objectMapper = new ObjectMapper(); // convert json-object
     private final UpdateUserProducer updateUserProducer;
 
@@ -39,7 +33,7 @@ public class MoodleUserService implements UserService {
     private String token;
 
     @Override
-    public String createUser(UserRequestDto userDto) throws JsonProcessingException {
+    public MoodleUserResponse createUser(UserRequestDto userDto) throws JsonProcessingException {
 
         String url = moodleUrl + "?wstoken=" + token + "&wsfunction=core_user_create_users&moodlewsrestformat=json";
 
@@ -52,44 +46,21 @@ public class MoodleUserService implements UserService {
         params.add("users[0][email]", userDto.getEmail());
         params.add("users[0][auth]", "manual");
 
-        // set http header to send a request
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-        headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+        JsonNode root = moodleHttpRequest.sendRequest(params, url); // send request
 
-        HttpEntity<MultiValueMap<String, String>> request =
-                new HttpEntity<>(params, headers);
-
-        /* moodle success response: [{"id": 42, "username": "username"}]
-           moodle error response: {"exception":"","errorcode":"","message":"","debuginfo":""}
-         */
-
-        String response = restTemplate.postForObject(url, request, String.class); // post
-        JsonNode root = objectMapper.readTree(response); // handle both error and success response
-
-        handleErrorResponse(root); // throw exception
-        sendEventCommandToUpdateUserMoodleId(root); // send an event command
-
-        return response;
-    }
-
-    private void handleErrorResponse(JsonNode root) throws JsonProcessingException {
-        // Check whether it's an object or array response before deserialization
-        if (root.isObject() && root.has("errorcode")) {
-            MoodleErrorResponse error = objectMapper.treeToValue(root, MoodleErrorResponse.class);
-            throw new MoodleException(error.getMessage());
-        }
-
-    }
-
-    private void sendEventCommandToUpdateUserMoodleId(JsonNode root) throws JsonProcessingException {
-        // extract userId from the response
+        // extract inserted user from success response
         List<MoodleUserResponse> users = objectMapper.readValue(
                 root.toString(),
                 new TypeReference<>() {}
         );
+        sendEventCommandToUpdateUserMoodleId(users.get(0)); // send an event command
 
-        Long userMoodleId = users.get(0).getId();
+        return users.get(0); // return the inserted user
+    }
+
+    private void sendEventCommandToUpdateUserMoodleId(MoodleUserResponse user) {
+
+        Long userMoodleId = user.getId();
         UUID dummyUserVersapathId =  UUID.randomUUID();
 
         // send event to update user moodle id

@@ -1,6 +1,7 @@
 package com.capstone.lms_service.controller;
 
 import com.capstone.lms_service.dto.ClientResponseFormatDto;
+import com.capstone.lms_service.dto.MoodleUserResponse;
 import com.capstone.lms_service.dto.UserRequestDto;
 import com.capstone.lms_service.service.CourseService;
 import com.capstone.lms_service.service.UserService;
@@ -27,7 +28,7 @@ public class MoodleController {
     @PostMapping("/create-user")
     @Operation(summary = "Insert learner on moodle", description = "This is a direct endpoint to insert leaner from Versapath to moodle ")
     public ResponseEntity<?> createUser(@RequestBody UserRequestDto userDto) throws JsonProcessingException {
-        String responseUser = userService.createUser(userDto);
+        MoodleUserResponse responseUser = userService.createUser(userDto);
         ClientResponseFormatDto response = ClientResponseFormatDto.builder()
                 .success(true)
                 .message("Learner inserted successfully!")
