@@ -1,7 +1,7 @@
 package com.capstone.lms_service.messaging;
 
 import lombok.RequiredArgsConstructor;
-import org.common.event.producer.UpdateUserEvent;
+import org.common.event.UpdateUserEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
