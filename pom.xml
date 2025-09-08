@@ -78,7 +78,7 @@
 		<dependency>
 			<groupId>org.common</groupId>
 			<artifactId>versapath-events</artifactId>
-			<version>1.4</version>
+			<version>1.9</version>
 		</dependency>
 <!--		lombok-->
 		<dependency>

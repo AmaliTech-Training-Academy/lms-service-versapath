@@ -1,7 +1,6 @@
 package com.capstone.lms_service.service;
 
 import com.capstone.lms_service.dto.MoodleUserResponse;
-import com.capstone.lms_service.dto.UserRequestDto;
 import com.capstone.lms_service.dto.MoodleErrorResponse;
 import com.capstone.lms_service.exception.MoodleException;
 import com.capstone.lms_service.messaging.UpdateUserProducer;
@@ -10,7 +9,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import org.common.event.producer.UpdateUserEvent;
+import org.common.event.ProduceUserEvent;
+import org.common.event.UpdateUserEvent;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -36,7 +36,7 @@ public class UserService {
 
     @Value("${WEBSERVICE_TOKEN}")
     private String token;
-    public String createUser(UserRequestDto userDto) throws JsonProcessingException {
+    public String createUser(ProduceUserEvent userDto) throws JsonProcessingException {
 
         String url = moodleUrl + "?wstoken=" + token + "&wsfunction=core_user_create_users&moodlewsrestformat=json";
 
@@ -44,8 +44,8 @@ public class UserService {
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add("users[0][username]", userDto.getUsername());
         params.add("users[0][password]", userDto.getPassword());
-        params.add("users[0][firstname]", userDto.getFirstname());
-        params.add("users[0][lastname]", userDto.getLastname());
+        params.add("users[0][firstname]", userDto.getFirstName());
+        params.add("users[0][lastname]", userDto.getLastName());
         params.add("users[0][email]", userDto.getEmail());
         params.add("users[0][auth]", "manual");
 
