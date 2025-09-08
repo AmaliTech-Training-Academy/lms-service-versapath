@@ -1,4 +1,4 @@
-name: Backend CI
+name: CI - Java checks
 
 on:
   pull_request:
@@ -7,8 +7,11 @@ on:
     branches: [dev]
 
 jobs:
-  build-test:
+  java-checks:
     runs-on: ubuntu-latest
+    env:
+      GH_USER: ${{ secrets.COMMON_EVENT_DEP_GH_USER }}
+      GH_TOKEN: ${{ secrets.COMMON_EVENT_DEP_GH_TOKEN }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -18,7 +21,10 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '21'
+          cache: maven
 
+      - run: |
+          curl -o settings.xml https://raw.githubusercontent.com/AmaliTech-Training-Academy/config-repository-versapath/refs/heads/dev/settings.xml
       - name: Cache Maven packages
         uses: actions/cache@v4
         with:
@@ -26,12 +32,14 @@ jobs:
           key: maven-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             maven-${{ runner.os }}-
-
+      - name: Verify dependencies
+        run: |
+          mvn -s settings.xml -B -DskipTests dependency:resolve
       - name: Build with Maven
-        run: mvn -B clean install
+        run: mvn -s settings.xml -B clean install
 
       - name: Run tests
-        run: mvn test
+        run: mvn -s settings.xml test
 
       - name: Upload test results
         if: always()
