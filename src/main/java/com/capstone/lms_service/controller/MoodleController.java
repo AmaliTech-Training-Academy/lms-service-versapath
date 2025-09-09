@@ -10,6 +10,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.common.event.CreateSkillEvent;
+import org.common.event.ProduceUserEvent;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,7 +29,7 @@ public class MoodleController {
 
     @PostMapping("/create-user")
     @Operation(summary = "Insert learner on moodle", description = "This is a direct endpoint to insert leaner from Versapath to moodle ")
-    public ResponseEntity<?> createUser(@RequestBody UserRequestDto userDto) throws JsonProcessingException {
+    public ResponseEntity<?> createUser(@RequestBody ProduceUserEvent userDto) throws JsonProcessingException {
         MoodleUserResponse responseUser = userService.createUser(userDto);
         ClientResponseFormatDto response = ClientResponseFormatDto.builder()
                 .success(true)

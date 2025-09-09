@@ -38,5 +38,4 @@ public class RabbitMQConfig {
         return new Queue("versapath.skill.update", true);
     }
 
-
 }
