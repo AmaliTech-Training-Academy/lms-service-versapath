@@ -24,7 +24,8 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Queue testQueue() {
-        return new Queue("versapath.user.created", true);
+    public Queue updateUserQueue() {
+        return new Queue("versapath.user.update", true);
     }
+
 }
