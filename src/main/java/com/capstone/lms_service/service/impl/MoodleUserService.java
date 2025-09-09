@@ -10,6 +10,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.common.event.ProduceUserEvent;
 import org.common.event.UpdateUserEvent;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -33,7 +34,7 @@ public class MoodleUserService implements UserService {
     private String token;
 
     @Override
-    public MoodleUserResponse createUser(UserRequestDto userDto) throws JsonProcessingException {
+    public MoodleUserResponse createUser(ProduceUserEvent userDto) throws JsonProcessingException {
 
         String url = moodleUrl + "?wstoken=" + token + "&wsfunction=core_user_create_users&moodlewsrestformat=json";
 
@@ -41,8 +42,8 @@ public class MoodleUserService implements UserService {
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add("users[0][username]", userDto.getUsername());
         params.add("users[0][password]", userDto.getPassword());
-        params.add("users[0][firstname]", userDto.getFirstname());
-        params.add("users[0][lastname]", userDto.getLastname());
+        params.add("users[0][firstname]", userDto.getFirstName());
+        params.add("users[0][lastname]", userDto.getLastName());
         params.add("users[0][email]", userDto.getEmail());
         params.add("users[0][auth]", "manual");
 

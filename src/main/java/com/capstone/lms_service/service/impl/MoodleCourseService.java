@@ -42,6 +42,7 @@ public class MoodleCourseService implements CourseService {
 
     @Override
     public MoodleCourseResponse createMoodleCourseStructure(CreateSkillEvent skillEvent) throws JsonProcessingException {
+        logger.info("inside the course {}", skillEvent);
         MoodleCourseResponse insertedCourse = createCourse(skillEvent.getCapsuleName()); // first create a course
         List<MoodlePageResponse> insertedPage = createPage(insertedCourse.getId(), skillEvent.getAtoms()); // create pages inside a course
 
@@ -107,6 +108,7 @@ public class MoodleCourseService implements CourseService {
     }
 
     void sendEventCommandToUpdateSkillData(MoodleCourseResponse insertedCourse){
+        logger.info("inside the send command skill {}", insertedCourse);
         List<SkillAtom> skillAtoms = new ArrayList<>();
         // map Versapath skill atom to Moodle page
         for(MoodlePageResponse page: insertedCourse.getMoodlePages()){
