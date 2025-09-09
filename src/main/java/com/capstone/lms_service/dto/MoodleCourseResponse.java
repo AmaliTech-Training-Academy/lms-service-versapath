@@ -12,7 +12,7 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 public class MoodleCourseResponse {
-    private Long id;
+    private int id;
     private String shortname;
     private String fullname;
     List<MoodlePageResponse> moodlePages;

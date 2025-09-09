@@ -11,8 +11,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class MoodlePageResponse {
-    private Long cmid; // id for tracking progress
-    private Long instance; // id for fetching content
+    private int cmid; // id for tracking progress
+    private int instance; // id for fetching content
     private String name; // atom name
-    private Long courseid; // course/capsule id
+    private int courseid; // course/capsule id
 }

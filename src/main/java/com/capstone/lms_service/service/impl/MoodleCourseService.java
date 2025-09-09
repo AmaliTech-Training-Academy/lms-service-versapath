@@ -78,7 +78,7 @@ public class MoodleCourseService implements CourseService {
         return courses.get(0);
     }
 
-    public List<MoodlePageResponse> createPage(Long courseId, List<String> atoms) throws JsonProcessingException {
+    public List<MoodlePageResponse> createPage(int courseId, List<String> atoms) throws JsonProcessingException {
         String url = moodleUrl + "?wstoken=" + localToken
                      + "&wsfunction=local_versapath_create_page&moodlewsrestformat=json";
 
@@ -87,7 +87,7 @@ public class MoodleCourseService implements CourseService {
         for(String atom : atoms) {
 
             MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-            params.add("courseid", courseId.toString());
+            params.add("courseid", ""+courseId+"");
             params.add("name", atom);
             params.add("intro", "This is a placeholder created by VersaPath.");
             params.add("content", "<p>Content to be added on Moodle</p>");
