@@ -16,8 +16,9 @@ public class CreateUserListener {
     private final UserService userService;
    @RabbitListener(queues = "versapath.user.created")
     public void handleMoodleUserCreation(ProduceUserEvent userEvent) throws JsonProcessingException {
-        logger.info("Receive event to create user on Moodle {}", userEvent);
 
+        logger.info("Start creating user: {}", userEvent);
         userService.createUser(userEvent);
+
     }
 }

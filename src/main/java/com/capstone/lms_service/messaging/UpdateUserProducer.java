@@ -14,7 +14,7 @@ public class UpdateUserProducer {
     private static final Logger logger = LoggerFactory.getLogger(UpdateUserProducer.class);
 
     public void sendUpdateUserMoodleIdCommand(UpdateUserEvent userEvent) {
-        logger.info("Send command to user moodle id field: {}", userEvent);
+        logger.info("Send command to update user moodle id field: {}", userEvent);
         rabbitTemplate.convertAndSend("versapath.user.update", userEvent);
     }
 }
