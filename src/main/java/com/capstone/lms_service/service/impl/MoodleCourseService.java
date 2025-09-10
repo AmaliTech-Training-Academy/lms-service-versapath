@@ -42,6 +42,9 @@ public class MoodleCourseService implements CourseService {
     @Value("${LOCAL_WEBSERVICE_TOKEN}")
     private String localToken;
 
+    @Value("${LOCAL_SINGLE_PAGE_TOKEN}")
+    private String singlePageToken; // custom php function
+
     @Override
     public MoodleCourseResponse createMoodleCourseStructure(CreateSkillEvent skillEvent) throws JsonProcessingException {
         logger.info("inside the course {}", skillEvent);
@@ -90,6 +93,24 @@ public class MoodleCourseService implements CourseService {
 
         logger.info("Fetched page content successfully for courseId={}", moodleCourseId);
         return response.getPages();
+    }
+
+    @Override
+    public MoodlePageContentResponse fetchSingleContent(int pageId) throws JsonProcessingException {
+        String url = moodleUrl + "?wstoken=" + singlePageToken + "&wsfunction=local_singlepage_get_page&moodlewsrestformat=json";
+
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("pageid", String.valueOf(pageId));
+
+        JsonNode root = moodleHttpRequest.sendRequest(params, url);
+
+        MoodlePageContentResponse response = objectMapper.readValue(
+                root.toString(),
+                MoodlePageContentResponse.class
+        );
+
+        logger.info("Fetched single page content successfully for courseId={}", pageId);
+        return response;
     }
 
     public MoodleCourseResponse createCourse(String capsuleName) throws JsonProcessingException {

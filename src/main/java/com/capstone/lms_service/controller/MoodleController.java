@@ -75,4 +75,17 @@ public class MoodleController {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
+    @GetMapping("/fetch-single-content")
+    @Operation(summary = "Fetch single content from Moodle", description = "This is a direct endpoint to fetch lesson content")
+    public ResponseEntity<?> fetchSingleContent(@RequestParam int pageId) throws JsonProcessingException {
+        MoodlePageContentResponse responseCourse = courseService.fetchSingleContent(pageId);
+        ClientResponseFormatDto response = ClientResponseFormatDto.builder()
+                .success(true)
+                .message("Fetch contents successfully!")
+                .errors(null)
+                .data(Map.of("item", responseCourse))
+                .build();
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
 }

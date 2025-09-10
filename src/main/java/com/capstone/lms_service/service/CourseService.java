@@ -11,4 +11,5 @@ public interface CourseService {
     MoodleCourseResponse createMoodleCourseStructure(CreateSkillEvent skillEvent) throws JsonProcessingException;
     String enrolLearnerInCourse(int moodleLeanerId, int moodleCourseId) throws JsonProcessingException;
     List<MoodlePageContentResponse> fetchContent(int moodleCourseId) throws JsonProcessingException;
+    MoodlePageContentResponse fetchSingleContent(int moodleCourseId) throws JsonProcessingException;
 }
