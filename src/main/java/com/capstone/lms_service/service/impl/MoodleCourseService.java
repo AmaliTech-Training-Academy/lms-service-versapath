@@ -1,7 +1,9 @@
 package com.capstone.lms_service.service.impl;
 
 import com.capstone.lms_service.dto.MoodleCourseResponse;
+import com.capstone.lms_service.dto.MoodlePageContentResponse;
 import com.capstone.lms_service.dto.MoodlePageResponse;
+import com.capstone.lms_service.dto.PageContentResponse;
 import com.capstone.lms_service.messaging.UpdateSkillProducer;
 import com.capstone.lms_service.service.CourseService;
 import com.capstone.lms_service.util.MoodleHttpRequest;
@@ -59,8 +61,8 @@ public class MoodleCourseService implements CourseService {
         //moodle expects parameters as below
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add("enrolments[0][roleid]","5"); // this is for learner
-        params.add("enrolments[0][userid]",""+moodleLeanerId+"");
-        params.add("enrolments[0][courseid]",""+moodleCourseId+"");
+        params.add("enrolments[0][userid]",String.valueOf(moodleLeanerId));
+        params.add("enrolments[0][courseid]",String.valueOf(moodleCourseId));
 
         JsonNode root = moodleHttpRequest.sendRequest(params, url); // send request
         String response = objectMapper.readValue(
@@ -70,6 +72,24 @@ public class MoodleCourseService implements CourseService {
         logger.info("Learner enrolled successfully: {}", moodleLeanerId);
 
         return "Enrolled learner id "+moodleCourseId;
+    }
+
+    @Override
+    public List<MoodlePageContentResponse> fetchContent(int moodleCourseId) throws JsonProcessingException {
+        String url = moodleUrl + "?wstoken=" + token + "&wsfunction=mod_page_get_pages_by_courses&moodlewsrestformat=json";
+
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("courseids[0]", String.valueOf(moodleCourseId));
+
+        JsonNode root = moodleHttpRequest.sendRequest(params, url);
+
+        PageContentResponse response = objectMapper.readValue(
+                root.toString(),
+                PageContentResponse.class
+        );
+
+        logger.info("Fetched page content successfully for courseId={}", moodleCourseId);
+        return response.getPages();
     }
 
     public MoodleCourseResponse createCourse(String capsuleName) throws JsonProcessingException {

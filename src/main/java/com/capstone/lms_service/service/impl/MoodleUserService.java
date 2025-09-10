@@ -38,11 +38,15 @@ public class MoodleUserService implements UserService {
 
         String url = moodleUrl + "?wstoken=" + token + "&wsfunction=core_user_create_users&moodlewsrestformat=json";
 
+        // create default password if is not set
+        String defaultPassword = userDto.getPassword() == null ? userDto.getUsername()+String
+                .valueOf(userDto.getUsername()
+                .charAt(0)).toUpperCase()+"1!" : userDto.getPassword();
         //moodle expects parameters
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add("users[0][username]", userDto.getUsername());
-        params.add("users[0][password]", userDto.getPassword());
-        params.add("users[0][firstname]", userDto.getFirstName());
+        params.add("users[0][password]", defaultPassword);
+        params.add("users[0][firstname]", userDto.getUsername());
         params.add("users[0][lastname]", userDto.getLastName());
         params.add("users[0][email]", userDto.getEmail());
         params.add("users[0][auth]", "manual");
