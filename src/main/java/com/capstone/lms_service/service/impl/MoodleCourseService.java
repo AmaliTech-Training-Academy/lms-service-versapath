@@ -52,6 +52,26 @@ public class MoodleCourseService implements CourseService {
         return insertedCourse;
     }
 
+    @Override
+    public String enrolLearnerInCourse(int moodleLeanerId, int moodleCourseId) throws JsonProcessingException {
+        String url = moodleUrl + "?wstoken=" + token + "&wsfunction=enrol_manual_enrol_users&moodlewsrestformat=json";
+
+        //moodle expects parameters as below
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("enrolments[0][roleid]","5"); // this is for learner
+        params.add("enrolments[0][userid]",""+moodleLeanerId+"");
+        params.add("enrolments[0][courseid]",""+moodleCourseId+"");
+
+        JsonNode root = moodleHttpRequest.sendRequest(params, url); // send request
+        String response = objectMapper.readValue(
+                root.toString(),
+                new TypeReference<>() {}); // the success response is an empty array
+
+        logger.info("Learner enrolled successfully: {}", moodleLeanerId);
+
+        return "Enrolled learner id "+moodleCourseId;
+    }
+
     public MoodleCourseResponse createCourse(String capsuleName) throws JsonProcessingException {
         String url = moodleUrl + "?wstoken=" + token + "&wsfunction=core_course_create_courses&moodlewsrestformat=json";
 
@@ -74,7 +94,7 @@ public class MoodleCourseService implements CourseService {
                 new TypeReference<>() {}
         );
 
-        logger.info("Course created successfule: {}", courses.get(0).getShortname());
+        logger.info("Course created successful: {}", courses.get(0).getShortname());
 
         return courses.get(0);
     }
@@ -99,7 +119,7 @@ public class MoodleCourseService implements CourseService {
             MoodlePageResponse response = objectMapper.treeToValue(root, MoodlePageResponse.class);
 
             pageResponseList.add(response);
-            logger.info("Page created successfule: {}", response.getName());
+            logger.info("Page created successful: {}", response.getName());
 
         }
 

@@ -13,12 +13,10 @@ import org.common.event.CreateSkillEvent;
 import org.common.event.ProduceUserEvent;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
@@ -47,6 +45,19 @@ public class MoodleController {
         ClientResponseFormatDto response = ClientResponseFormatDto.builder()
                 .success(true)
                 .message("Course inserted successfully!")
+                .errors(null)
+                .data(Map.of("item", responseCourse))
+                .build();
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @PostMapping("/enrol-learner")
+    @Operation(summary = "Insert learner on moodle", description = "This is a direct endpoint to insert leaner from Versapath to moodle ")
+    public ResponseEntity<?> createCourse(@RequestParam int moodleLearnerId, @RequestParam int moodleCourseId) throws JsonProcessingException {
+        String responseCourse = courseService.enrolLearnerInCourse(moodleLearnerId, moodleCourseId);
+        ClientResponseFormatDto response = ClientResponseFormatDto.builder()
+                .success(true)
+                .message("Learner enrolled successfully!")
                 .errors(null)
                 .data(Map.of("item", responseCourse))
                 .build();
