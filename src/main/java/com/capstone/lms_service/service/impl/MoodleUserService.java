@@ -1,8 +1,6 @@
 package com.capstone.lms_service.service.impl;
 
 import com.capstone.lms_service.dto.MoodleUserResponse;
-import com.capstone.lms_service.dto.UserRequestDto;
-import com.capstone.lms_service.messaging.UpdateSkillErrorProducer;
 import com.capstone.lms_service.messaging.UpdateUserProducer;
 import com.capstone.lms_service.service.UserService;
 import com.capstone.lms_service.util.MoodleHttpRequest;
@@ -24,8 +22,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class MoodleUserService implements UserService {
-    private final UpdateSkillErrorProducer updateSkillErrorProducer;
-    MoodleHttpRequest moodleHttpRequest = new MoodleHttpRequest(updateSkillErrorProducer);
+    private final MoodleHttpRequest moodleHttpRequest = new MoodleHttpRequest();
     private final ObjectMapper objectMapper = new ObjectMapper(); // convert json-object
     private final UpdateUserProducer updateUserProducer;
 
@@ -60,21 +57,18 @@ public class MoodleUserService implements UserService {
                 root.toString(),
                 new TypeReference<>() {}
         );
-        sendEventCommandToUpdateUserMoodleId(users.get(0)); // send an event command
+        sendEventCommandToUpdateUserMoodleId(users.get(0), userDto.getVersapathUserId()); // send an event command
 
         return users.get(0); // return the inserted user
     }
 
-    private void sendEventCommandToUpdateUserMoodleId(MoodleUserResponse user) {
-
-        Long userMoodleId = user.getId();
-        UUID dummyUserVersapathId =  UUID.randomUUID();
+    private void sendEventCommandToUpdateUserMoodleId(MoodleUserResponse user, UUID userVersapathId) {
 
         // send event to update user moodle id
         updateUserProducer
                 .sendUpdateUserMoodleIdCommand(UpdateUserEvent.builder()
-                        .moodleUserId(userMoodleId)
-                        .versapathUserId(dummyUserVersapathId)
+                        .moodleUserId(user.getId())
+                        .versapathUserId(userVersapathId)
                         .build());
     }
 

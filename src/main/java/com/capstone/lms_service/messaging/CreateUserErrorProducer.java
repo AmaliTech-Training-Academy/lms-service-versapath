@@ -10,14 +10,14 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class UpdateSkillErrorProducer {
+public class CreateUserErrorProducer {
     private final RabbitTemplate rabbitTemplate;
-    private static final Logger logger = LoggerFactory.getLogger(UpdateSkillErrorProducer.class);
-    @Value("${SKILL_UPDATE_ERROR_QUEUE}")
-    private String skillUpdateErrorQueue;
+    private static final Logger logger = LoggerFactory.getLogger(CreateUserErrorProducer.class);
+    @Value("${USER_CREATE_ERROR_QUEUE}")
+    private String userCreateErrorQueue;
 
-    public void sendUpdateErrorSkillsCommand(ErrorEvent errorEvent) {
+    public void sendCreateErrorUserCommand(ErrorEvent errorEvent) {
         logger.info("Send command to display error: {}", errorEvent);
-        rabbitTemplate.convertAndSend(skillUpdateErrorQueue, errorEvent);
+        rabbitTemplate.convertAndSend(userCreateErrorQueue, errorEvent);
     }
 }
