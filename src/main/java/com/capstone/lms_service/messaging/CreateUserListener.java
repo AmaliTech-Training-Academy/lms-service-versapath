@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 public class CreateUserListener {
     private static final Logger logger = LoggerFactory.getLogger(CreateUserListener.class);
     private final UserService userService;
-   @RabbitListener(queues = "versapath.user.created")
+   @RabbitListener(queues = "${USER_CREATE_QUEUE}")
     public void handleMoodleUserCreation(ProduceUserEvent userEvent) throws JsonProcessingException {
 
         logger.info("Start creating user: {}", userEvent);
