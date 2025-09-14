@@ -2,10 +2,14 @@ package com.capstone.lms_service.util;
 
 import com.capstone.lms_service.dto.MoodleErrorResponse;
 import com.capstone.lms_service.exception.MoodleException;
+import com.capstone.lms_service.messaging.UpdateSkillErrorProducer;
+import com.capstone.lms_service.messaging.UpdateSkillProducer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.common.event.CreateSkillEvent;
+import org.common.event.ErrorEvent;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -13,14 +17,17 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Collections;
+import java.util.UUID;
 
 @RequiredArgsConstructor
 public class MoodleHttpRequest {
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper(); // convert json-object
 
+    private final UpdateSkillErrorProducer updateSkillErrorProducer;
 
-    public JsonNode sendRequest(MultiValueMap<String, String> params , String url) throws JsonProcessingException {
+
+    public JsonNode sendRequest(MultiValueMap<String, String> params , String url, UUID userId) throws JsonProcessingException {
         // set http header to send a request
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
@@ -35,16 +42,24 @@ public class MoodleHttpRequest {
         String response = restTemplate.postForObject(url, request, String.class); // post
         JsonNode root = objectMapper.readTree(response); // handle both error and success response
 
-        handleErrorResponse(root); // throw exception if encounter error
+        handleErrorResponse(root, userId); // throw exception if encounter error
 
         return root; // return success response
     }
 
-    private void handleErrorResponse(JsonNode root) throws JsonProcessingException {
+    private void handleErrorResponse(JsonNode root, UUID userId) throws JsonProcessingException {
         // Check whether it's an object or array response before deserialization
         if (root.isObject() && root.has("errorcode")) {
             MoodleErrorResponse error = objectMapper.treeToValue(root, MoodleErrorResponse.class);
-            throw new MoodleException(error.getMessage());
+
+            // create and send error event
+            ErrorEvent errorEvent = ErrorEvent.builder()
+                    .errorMessage(error.getMessage())
+                    .triggeredBy(userId)
+                    .build();
+            updateSkillErrorProducer.sendUpdateErrorSkillsCommand(errorEvent);
+
+            throw new MoodleException(error.getMessage()); // this is used when there is an HTTP request
         }
 
     }

@@ -2,6 +2,7 @@ package com.capstone.lms_service.service.impl;
 
 import com.capstone.lms_service.dto.MoodleUserResponse;
 import com.capstone.lms_service.dto.UserRequestDto;
+import com.capstone.lms_service.messaging.UpdateSkillErrorProducer;
 import com.capstone.lms_service.messaging.UpdateUserProducer;
 import com.capstone.lms_service.service.UserService;
 import com.capstone.lms_service.util.MoodleHttpRequest;
@@ -23,7 +24,8 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class MoodleUserService implements UserService {
-    MoodleHttpRequest moodleHttpRequest = new MoodleHttpRequest();
+    private final UpdateSkillErrorProducer updateSkillErrorProducer;
+    MoodleHttpRequest moodleHttpRequest = new MoodleHttpRequest(updateSkillErrorProducer);
     private final ObjectMapper objectMapper = new ObjectMapper(); // convert json-object
     private final UpdateUserProducer updateUserProducer;
 
@@ -39,12 +41,12 @@ public class MoodleUserService implements UserService {
         String url = moodleUrl + "?wstoken=" + token + "&wsfunction=core_user_create_users&moodlewsrestformat=json";
 
         // create default password if is not set
-        String defaultPassword = userDto.getPassword() == null ? userDto.getUsername()+String
+        String defaultPassword = userDto.getUsername().toLowerCase()+String
                 .valueOf(userDto.getUsername()
-                .charAt(0)).toUpperCase()+"1!" : userDto.getPassword();
+                .charAt(0)).toUpperCase()+"1!";
         //moodle expects parameters
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add("users[0][username]", userDto.getUsername());
+        params.add("users[0][username]", userDto.getUsername().toLowerCase());
         params.add("users[0][password]", defaultPassword);
         params.add("users[0][firstname]", userDto.getUsername());
         params.add("users[0][lastname]", userDto.getLastName());
