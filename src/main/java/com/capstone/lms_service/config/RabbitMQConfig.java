@@ -23,6 +23,9 @@ public class RabbitMQConfig {
     @Value("${SKILL_UPDATE_QUEUE}")
     private String skillUpdateQueue;
 
+    @Value("${SKILL_UPDATE_ERROR_QUEUE}")
+    private String skillUpdateErrorQueue;
+
     @Bean
     public Jackson2JsonMessageConverter jackson2JsonMessageConverter() {
         return new Jackson2JsonMessageConverter();
@@ -50,6 +53,12 @@ public class RabbitMQConfig {
     public Queue updateSkillQueue() {
         return new Queue(skillUpdateQueue, true);
     }
+
+    @Bean
+    public Queue updateSkillErrorQueue() {
+        return new Queue(skillUpdateErrorQueue, true);
+    }
+
 
     @Bean
     public Queue createUserQueue() {
