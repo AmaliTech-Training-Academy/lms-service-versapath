@@ -15,7 +15,7 @@ public class CreateSkillEventListener {
     private static final Logger logger = LoggerFactory.getLogger(CreateSkillEventListener.class);
     private final CourseService courseService;
 
-   @RabbitListener(queues = "versapath.skill.create")
+   @RabbitListener(queues = "${SKILL_CREATE_QUEUE}")
     public void handleMoodleUserCreation(CreateSkillEvent skillEvent) throws JsonProcessingException {
 
         logger.info("Start creating skill event: {}", skillEvent);

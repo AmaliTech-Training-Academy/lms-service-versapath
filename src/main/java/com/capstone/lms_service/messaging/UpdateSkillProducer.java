@@ -5,6 +5,7 @@ import org.common.event.UpdateSkillEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -12,9 +13,11 @@ import org.springframework.stereotype.Component;
 public class UpdateSkillProducer {
     private final RabbitTemplate rabbitTemplate;
     private static final Logger logger = LoggerFactory.getLogger(UpdateSkillProducer.class);
+    @Value("${SKILL_UPDATE_QUEUE}")
+    private String skillUpdateQueue;
 
     public void sendUpdateSkillsCommand(UpdateSkillEvent skillEvent) {
         logger.info("Send command to update skill data with Moodle info: {}", skillEvent.getName());
-        rabbitTemplate.convertAndSend("versapath.skill.update", skillEvent);
+        rabbitTemplate.convertAndSend(skillUpdateQueue, skillEvent);
     }
 }

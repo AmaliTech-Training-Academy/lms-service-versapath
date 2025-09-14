@@ -2,6 +2,7 @@ package com.capstone.lms_service.config;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.amqp.core.Queue;
@@ -9,6 +10,18 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 
 @Configuration
 public class RabbitMQConfig {
+
+    @Value("${USER_CREATE_QUEUE}")
+    private String userCreateQueue;
+
+    @Value("${USER_UPDATE_QUEUE}")
+    private String userUpdateQueue;
+
+    @Value("${SKILL_CREATE_QUEUE}")
+    private String skillCreateQueue;
+
+    @Value("${SKILL_UPDATE_QUEUE}")
+    private String skillUpdateQueue;
 
     @Bean
     public Jackson2JsonMessageConverter jackson2JsonMessageConverter() {
@@ -24,18 +37,24 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Queue testQueue() {
-        return new Queue("versapath.user.created", true);
+    public Queue createSkillQueue() {
+        return new Queue(skillCreateQueue, true);
     }
 
     @Bean
     public Queue updateUserQueue() {
-        return new Queue("versapath.user.update", true);
+        return new Queue(userUpdateQueue, true);
     }
 
     @Bean
     public Queue updateSkillQueue() {
-        return new Queue("versapath.skill.update", true);
+        return new Queue(skillUpdateQueue, true);
     }
+
+    @Bean
+    public Queue createUserQueue() {
+        return new Queue(userCreateQueue, true);
+    }
+
 
 }
