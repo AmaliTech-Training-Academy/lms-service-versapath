@@ -26,6 +26,15 @@ public class RabbitMQConfig {
     @Value("${SKILL_UPDATE_ERROR_QUEUE}")
     private String skillUpdateErrorQueue;
 
+    @Value("${SKILL_CREATE_ERROR_QUEUE}")
+    private String skillCreateErrorQueue;
+
+    @Value("${USER_UPDATE_ERROR_QUEUE}")
+    private String userUpdateErrorQueue;
+
+    @Value("${USER_CREATE_ERROR_QUEUE}")
+    private String userCreateErrorQueue;
+
     @Bean
     public Jackson2JsonMessageConverter jackson2JsonMessageConverter() {
         return new Jackson2JsonMessageConverter();
@@ -59,11 +68,24 @@ public class RabbitMQConfig {
         return new Queue(skillUpdateErrorQueue, true);
     }
 
+    @Bean
+    public Queue createSkillErrorQueue() {
+        return new Queue(skillCreateErrorQueue, true);
+    }
+
+    @Bean
+    public Queue createUserErrorQueue() {
+        return new Queue(userCreateErrorQueue, true);
+    }
+
+    @Bean
+    public Queue updateUserErrorQueue() {
+        return new Queue(userUpdateErrorQueue, true);
+    }
 
     @Bean
     public Queue createUserQueue() {
         return new Queue(userCreateQueue, true);
     }
-
 
 }

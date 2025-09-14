@@ -4,7 +4,6 @@ import com.capstone.lms_service.dto.MoodleCourseResponse;
 import com.capstone.lms_service.dto.MoodlePageContentResponse;
 import com.capstone.lms_service.dto.MoodlePageResponse;
 import com.capstone.lms_service.dto.PageContentResponse;
-import com.capstone.lms_service.messaging.UpdateSkillErrorProducer;
 import com.capstone.lms_service.messaging.UpdateSkillProducer;
 import com.capstone.lms_service.service.CourseService;
 import com.capstone.lms_service.util.MoodleHttpRequest;
@@ -25,7 +24,6 @@ import org.springframework.util.MultiValueMap;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -33,8 +31,7 @@ public class MoodleCourseService implements CourseService {
     private static final Logger logger = LoggerFactory.getLogger(MoodleCourseService.class);
     private final ObjectMapper objectMapper = new ObjectMapper(); // convert json-object
     private final UpdateSkillProducer updateSkillProducer;
-    private final UpdateSkillErrorProducer updateSkillErrorProducer;
-    MoodleHttpRequest moodleHttpRequest = new MoodleHttpRequest(updateSkillErrorProducer);
+    private final MoodleHttpRequest moodleHttpRequest = new MoodleHttpRequest();
 
     @Value("${MOODLE_URL}")
     private String moodleUrl;
@@ -51,8 +48,8 @@ public class MoodleCourseService implements CourseService {
     @Override
     public MoodleCourseResponse createMoodleCourseStructure(CreateSkillEvent skillEvent) throws JsonProcessingException {
         logger.info("inside the course {}", skillEvent);
-        MoodleCourseResponse insertedCourse = createCourse(skillEvent.getCapsuleName(), skillEvent.getUserId()); // first create a course
-        List<MoodlePageResponse> insertedPage = createPage(insertedCourse.getId(), skillEvent.getAtoms(), skillEvent.getUserId()); // create pages inside a course
+        MoodleCourseResponse insertedCourse = createCourse(skillEvent.getCapsuleName()); // first create a course
+        List<MoodlePageResponse> insertedPage = createPage(insertedCourse.getId(), skillEvent.getAtoms()); // create pages inside a course
 
         insertedCourse.setMoodlePages(insertedPage);
         sendEventCommandToUpdateSkillData(insertedCourse); // send updated skills data with Moodle info
@@ -61,7 +58,7 @@ public class MoodleCourseService implements CourseService {
     }
 
     @Override
-    public String enrolLearnerInCourse(int moodleLeanerId, int moodleCourseId, UUID userId) throws JsonProcessingException {
+    public String enrolLearnerInCourse(int moodleLeanerId, int moodleCourseId) throws JsonProcessingException {
         String url = moodleUrl + "?wstoken=" + token + "&wsfunction=enrol_manual_enrol_users&moodlewsrestformat=json";
 
         //moodle expects parameters as below
@@ -70,8 +67,8 @@ public class MoodleCourseService implements CourseService {
         params.add("enrolments[0][userid]",String.valueOf(moodleLeanerId));
         params.add("enrolments[0][courseid]",String.valueOf(moodleCourseId));
 
-        JsonNode root = moodleHttpRequest.sendRequest(params, url, userId); // send request
-        String response = objectMapper.readValue(
+        JsonNode root = moodleHttpRequest.sendRequest(params, url); // send request
+        objectMapper.readValue(
                 root.toString(),
                 new TypeReference<>() {}); // the success response is an empty array
 
@@ -116,7 +113,7 @@ public class MoodleCourseService implements CourseService {
         return response;
     }
 
-    public MoodleCourseResponse createCourse(String capsuleName, UUID userId) throws JsonProcessingException {
+    public MoodleCourseResponse createCourse(String capsuleName) throws JsonProcessingException {
         String url = moodleUrl + "?wstoken=" + token + "&wsfunction=core_course_create_courses&moodlewsrestformat=json";
 
         //moodle expects parameters as below
@@ -130,7 +127,7 @@ public class MoodleCourseService implements CourseService {
         //Moodle stores timestamps as Unix epoch seconds
         params.add("courses[0][startdate]", String.valueOf(System.currentTimeMillis() / 1000));
 
-        JsonNode root = moodleHttpRequest.sendRequest(params, url, userId); // send request
+        JsonNode root = moodleHttpRequest.sendRequest(params, url); // send request
 
         // extract courseId from success the response
         List<MoodleCourseResponse> courses = objectMapper.readValue(
@@ -143,7 +140,7 @@ public class MoodleCourseService implements CourseService {
         return courses.get(0);
     }
 
-    public List<MoodlePageResponse> createPage(int courseId, List<String> atoms, UUID userId) throws JsonProcessingException {
+    public List<MoodlePageResponse> createPage(int courseId, List<String> atoms) throws JsonProcessingException {
         String url = moodleUrl + "?wstoken=" + localToken
                      + "&wsfunction=local_versapath_create_page&moodlewsrestformat=json";
 
@@ -157,7 +154,7 @@ public class MoodleCourseService implements CourseService {
             params.add("intro", "This is a placeholder created by VersaPath.");
             params.add("content", "<p>Content to be added on Moodle</p>");
 
-            JsonNode root = moodleHttpRequest.sendRequest(params, url, userId); // Send request
+            JsonNode root = moodleHttpRequest.sendRequest(params, url); // Send request
 
             // Deserialize JSON to DTO
             MoodlePageResponse response = objectMapper.treeToValue(root, MoodlePageResponse.class);
