@@ -120,7 +120,7 @@ public class MoodleCourseService implements CourseService {
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add("courses[0][fullname]", capsuleName);
         params.add("courses[0][shortname]", capsuleName);
-        params.add("courses[0][categoryid]", "2");
+        params.add("courses[0][categoryid]", "1");
         params.add("courses[0][visible]", "1");
         params.add("courses[0][summary]", "Capsule description");
         params.add("courses[0][format]", "topics");
