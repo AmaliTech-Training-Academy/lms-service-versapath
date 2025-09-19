@@ -2,6 +2,7 @@ package com.capstone.lms_service.service;
 
 import com.capstone.lms_service.dto.MoodleCourseResponse;
 import com.capstone.lms_service.dto.MoodlePageContentResponse;
+import com.capstone.lms_service.dto.MoodlePageResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.common.event.CreateSkillEvent;
 
@@ -12,4 +13,5 @@ public interface CourseService {
     String enrolLearnerInCourse(int moodleLeanerId, int moodleCourseId) throws JsonProcessingException;
     List<MoodlePageContentResponse> fetchContent(int moodleCourseId) throws JsonProcessingException;
     MoodlePageContentResponse fetchSingleContent(int moodleCourseId) throws JsonProcessingException;
+    List<MoodlePageResponse> createPage(int courseId, List<String> atoms) throws JsonProcessingException;
 }
