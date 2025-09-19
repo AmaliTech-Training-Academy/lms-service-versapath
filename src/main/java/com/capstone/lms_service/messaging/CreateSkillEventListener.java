@@ -17,7 +17,7 @@ public class CreateSkillEventListener {
     private final CreateSkillErrorProducer createSkillErrorProducer;
 
    @RabbitListener(queues = "${SKILL_CREATE_QUEUE}")
-    public void handleMoodleUserCreation(CreateSkillEvent skillEvent){
+    public void handleMoodleSkillCreation(CreateSkillEvent skillEvent){
        try {
            logger.info("Start creating skill event: {}", skillEvent);
            courseService.createMoodleCourseStructure(skillEvent);
