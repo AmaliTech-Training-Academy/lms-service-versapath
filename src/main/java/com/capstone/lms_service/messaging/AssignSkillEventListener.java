@@ -20,7 +20,7 @@ public class AssignSkillEventListener {
            logger.info("Start assigning lesson to capsule: {}", skillEvent);
 
            // create new lesson in a course
-           courseService.createPage(skillEvent.getMoodleCourseId(), skillEvent.getAtoms());
+           courseService.assignLessonToCourse(skillEvent);
        } catch (Exception ex) {
            logger.error("Failed to assign lesson: {}", ex.getMessage());
        }
