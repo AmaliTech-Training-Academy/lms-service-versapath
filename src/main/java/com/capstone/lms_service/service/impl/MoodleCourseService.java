@@ -12,6 +12,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.common.event.AssignAtomToCapsuleEvent;
 import org.common.event.CreateSkillEvent;
 import org.common.event.SkillAtom;
 import org.common.event.UpdateSkillEvent;
@@ -168,6 +169,36 @@ public class MoodleCourseService implements CourseService {
         return pageResponseList;
     }
 
+    @Override
+    public void assignLessonToCourse(AssignAtomToCapsuleEvent skillEvent) throws JsonProcessingException {
+        String url = moodleUrl + "?wstoken=" + localToken
+                     + "&wsfunction=local_versapath_create_page&moodlewsrestformat=json";
+
+        List<MoodlePageResponse> pageResponseList = new ArrayList<>();
+
+        for(String atom : skillEvent.getAtoms()) {
+
+            MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+            params.add("courseid", ""+skillEvent.getMoodleCourseId()+"");
+            params.add("name", atom);
+            params.add("intro", "This is a placeholder created by VersaPath.");
+            params.add("content", "<p>Content to be added on Moodle</p>");
+
+            JsonNode root = moodleHttpRequest.sendRequest(params, url); // Send request
+
+            // Deserialize JSON to DTO
+            MoodlePageResponse response = objectMapper.treeToValue(root, MoodlePageResponse.class);
+
+            pageResponseList.add(response);
+            logger.info("New page created successful: {}", response.getName());
+
+        }
+
+        // send command to update lesson with Moodle information
+        sendEventCommandToUpdateLesson(pageResponseList, skillEvent);
+
+    }
+
     void sendEventCommandToUpdateSkillData(MoodleCourseResponse insertedCourse){
         logger.info("inside the send command skill {}", insertedCourse);
         List<SkillAtom> skillAtoms = new ArrayList<>();
@@ -185,6 +216,29 @@ public class MoodleCourseService implements CourseService {
         UpdateSkillEvent updateSkillEvent = UpdateSkillEvent.builder()
                 .courseId(insertedCourse.getId())
                 .name(insertedCourse.getShortname())
+                .skillAtoms(skillAtoms)
+                .build();
+
+        updateSkillProducer.sendUpdateSkillsCommand(updateSkillEvent);
+    }
+
+    void sendEventCommandToUpdateLesson(List<MoodlePageResponse> moodlePageResponse, AssignAtomToCapsuleEvent assignAtomToCapsuleEvent){
+        logger.info("inside the send command update lesson {}", moodlePageResponse);
+        List<SkillAtom> skillAtoms = new ArrayList<>();
+        // map Versapath skill atom to Moodle page
+        for(MoodlePageResponse page: moodlePageResponse){
+            SkillAtom skillAtom = SkillAtom.builder()
+                    .name(page.getName())
+                    .courseModuleId(page.getCmid())
+                    .pageId(page.getInstance())
+                    .build();
+
+            skillAtoms.add(skillAtom);
+        }
+        // map Versapath skill capsule to Moodle course
+        UpdateSkillEvent updateSkillEvent = UpdateSkillEvent.builder()
+                .courseId(assignAtomToCapsuleEvent.getMoodleCourseId())
+                .name(assignAtomToCapsuleEvent.getCourseName())
                 .skillAtoms(skillAtoms)
                 .build();
 
