@@ -1,12 +1,14 @@
 package com.capstone.lms_service.service.impl;
 
 import com.capstone.lms_service.dto.AssessmentResponseDto;
+import com.capstone.lms_service.messaging.UpdateAssessmentProducer;
 import com.capstone.lms_service.service.AssessmentService;
 import com.capstone.lms_service.util.MoodleHttpRequest;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import org.common.event.AssessmentEvent;
+import org.common.event.AssessmentUpdateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,6 +21,7 @@ import org.springframework.util.MultiValueMap;
 public class MoodleAssessmentService implements AssessmentService {
     private static final Logger logger = LoggerFactory.getLogger(MoodleAssessmentService.class);
     private final MoodleHttpRequest moodleHttpRequest = new MoodleHttpRequest();
+    private final UpdateAssessmentProducer updateAssessmentProducer;
 
     @Value("${MOODLE_URL}")
     private String moodleUrl;
@@ -49,8 +52,19 @@ public class MoodleAssessmentService implements AssessmentService {
                 .moodleCourseId(root.get("courseid").asInt())
                 .build();
 
+        sendEventToUpdateAssessment(responseDto, assessmentEvent);
+
         logger.info("Assessment created successfully in course {} with id {} and module {}", responseDto.getMoodleCourseId(),
                 responseDto.getQuizId(), responseDto.getMoodleCourseModuleId());
 
+    }
+
+    private void sendEventToUpdateAssessment(AssessmentResponseDto assessmentResponseDto, AssessmentEvent assessmentEvent){
+        AssessmentUpdateEvent assessmentUpdateEvent = AssessmentUpdateEvent.builder()
+                .assessmentName(assessmentEvent.getAssessmentName())
+                .moodleCourseModuleId(assessmentResponseDto.getMoodleCourseModuleId())
+                .quizId(assessmentResponseDto.getQuizId())
+                .build();
+        updateAssessmentProducer.sendUpdateAssessments(assessmentUpdateEvent);
     }
 }

@@ -35,6 +35,9 @@ public class RabbitMQConfig {
     @Value("${USER_CREATE_ERROR_QUEUE}")
     private String userCreateErrorQueue;
 
+    @Value("${ASSESSMENT_UPDATE_QUEUE}")
+    private String assessmentUpdateQueue;
+
     @Bean
     public Jackson2JsonMessageConverter jackson2JsonMessageConverter() {
         return new Jackson2JsonMessageConverter();
@@ -86,6 +89,11 @@ public class RabbitMQConfig {
     @Bean
     public Queue createUserQueue() {
         return new Queue(userCreateQueue, true);
+    }
+
+    @Bean
+    public Queue updateAssessmentQueue() {
+        return new Queue(assessmentUpdateQueue, true);
     }
 
 }
