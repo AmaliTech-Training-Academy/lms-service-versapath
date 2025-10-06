@@ -1,6 +1,8 @@
 package com.capstone.lms_service.service.impl;
 
 import com.capstone.lms_service.dto.AssessmentResponseDto;
+import com.capstone.lms_service.dto.PageContentResponse;
+import com.capstone.lms_service.dto.quiz.QuizDTO;
 import com.capstone.lms_service.messaging.UpdateAssessmentProducer;
 import com.capstone.lms_service.service.AssessmentService;
 import com.capstone.lms_service.util.MoodleHttpRequest;
@@ -16,6 +18,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class MoodleAssessmentService implements AssessmentService {
@@ -28,6 +33,9 @@ public class MoodleAssessmentService implements AssessmentService {
 
     @Value("${LOCAL_CREATE_QUIZ}")
     private String token;
+
+    @Value("${WEBSERVICE_TOKEN}")
+    private String webToken;
 
     @Override
     public void createAssessmentOnMoodle(AssessmentEvent assessmentEvent) throws JsonProcessingException {
@@ -66,5 +74,32 @@ public class MoodleAssessmentService implements AssessmentService {
                 .quizId(assessmentResponseDto.getQuizId())
                 .build();
         updateAssessmentProducer.sendUpdateAssessments(assessmentUpdateEvent);
+    }
+
+    public List<QuizDTO> getQuizzesByCourse(Long courseId) throws JsonProcessingException {
+        String url = moodleUrl + "?wstoken=" + webToken + "&wsfunction=mod_quiz_get_quizzes_by_courses&moodlewsrestformat=json";
+
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("courseids[0]", String.valueOf(courseId));
+
+        JsonNode root = moodleHttpRequest.sendRequest(params, url);
+        JsonNode quizzes = root.get("quizzes");
+
+        List<QuizDTO> quizDTOList = new ArrayList<>();
+        for(JsonNode quiz: quizzes){
+            QuizDTO dto = QuizDTO.builder()
+                    .id(quiz.get("id").asLong())
+                    .name(quiz.get("name").asText())
+                    .attempts(quiz.get("attempts").asInt())
+                    .intro(quiz.get("intro").asText())
+                    .grade(quiz.get("grade").asInt())
+                    .timeLimit(quiz.get("timelimit").asInt())
+                    .questionCount(quiz.get("hasquestions").asInt())
+                    .build();
+            quizDTOList.add(dto);
+
+        }
+
+        return quizDTOList;
     }
 }
