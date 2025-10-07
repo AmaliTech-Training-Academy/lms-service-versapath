@@ -106,4 +106,18 @@ public class MoodleController {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
+    @PostMapping("assessments/{quizId}/start")
+    @Operation(summary = "Start assessment",
+            description = "This endpoint is the start of an assessment based on the attempt number")
+    public ResponseEntity<ClientResponseFormatDto> startQuizAttempt(@PathVariable Long quizId) throws JsonProcessingException {
+        AttemptDTO attempt = moodleAssessmentService.startQuizAttempt(quizId);
+        ClientResponseFormatDto response = ClientResponseFormatDto.builder()
+                .success(true)
+                .message("Assessment has started!")
+                .errors(null)
+                .data(Map.of("item", attempt))
+                .build();
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
 }

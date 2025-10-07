@@ -2,6 +2,7 @@ package com.capstone.lms_service.service.impl;
 
 import com.capstone.lms_service.dto.AssessmentResponseDto;
 import com.capstone.lms_service.dto.PageContentResponse;
+import com.capstone.lms_service.dto.quiz.AttemptDTO;
 import com.capstone.lms_service.dto.quiz.QuizDTO;
 import com.capstone.lms_service.messaging.UpdateAssessmentProducer;
 import com.capstone.lms_service.service.AssessmentService;
@@ -18,6 +19,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -101,5 +105,34 @@ public class MoodleAssessmentService implements AssessmentService {
         }
 
         return quizDTOList;
+    }
+
+    public AttemptDTO startQuizAttempt(Long quizId) throws JsonProcessingException {
+        String url = moodleUrl + "?wstoken=" + webToken + "&wsfunction=mod_quiz_start_attempt&moodlewsrestformat=json";
+
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("quizid", String.valueOf(quizId));
+
+        JsonNode root = moodleHttpRequest.sendRequest(params, url);
+        JsonNode attempt = root.get("attempt");
+
+        return AttemptDTO.builder()
+                .id(attempt.get("id").asLong())
+                .userid(attempt.get("userid").asLong())
+                .attempt(attempt.get("attempt").asInt())
+                .quiz(attempt.get("quiz").asLong())
+                .state(attempt.get("state").asText())
+                .timestart(getReadableTime(attempt.get("timestart").asLong()))
+                .timefinish(getReadableTime(attempt.get("timefinish").asLong()))
+                .build();
+    }
+
+    private String getReadableTime(Long time) {
+        if (time != null) {
+            Instant instant = Instant.ofEpochSecond(time);
+            LocalDateTime dateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
+            return dateTime.toString();
+        }
+        return null;
     }
 }
