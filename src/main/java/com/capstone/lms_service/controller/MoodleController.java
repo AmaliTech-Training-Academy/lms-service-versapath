@@ -120,4 +120,19 @@ public class MoodleController {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
+    @PostMapping("assessments/{quizId}/questions")
+    @Operation(summary = "Retrieve assessment questions",
+            description = "This endpoint is the start of an assessment based on the attempt number and " +
+                          "also retrieve questions related to the assessment")
+    public ResponseEntity<ClientResponseFormatDto> attempt(@PathVariable Long quizId) throws JsonProcessingException {
+        QuizAttemptDataDTO quizResponse = moodleAssessmentService.getQuizQuestions(quizId);
+        ClientResponseFormatDto response = ClientResponseFormatDto.builder()
+                .success(true)
+                .message("Assessment questions retrieved successfully!")
+                .errors(null)
+                .data(Map.of("item", quizResponse))
+                .build();
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
 }

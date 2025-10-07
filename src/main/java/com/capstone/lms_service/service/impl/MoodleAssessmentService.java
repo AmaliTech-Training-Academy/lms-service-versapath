@@ -1,7 +1,6 @@
 package com.capstone.lms_service.service.impl;
 
 import com.capstone.lms_service.dto.AssessmentResponseDto;
-import com.capstone.lms_service.dto.PageContentResponse;
 import com.capstone.lms_service.dto.quiz.AttemptDTO;
 import com.capstone.lms_service.dto.quiz.QuestionDTO;
 import com.capstone.lms_service.dto.quiz.QuizAttemptDataDTO;
@@ -118,6 +117,8 @@ public class MoodleAssessmentService implements AssessmentService {
         JsonNode root = moodleHttpRequest.sendRequest(params, url);
         JsonNode attempt = root.get("attempt");
 
+        logger.info("Starting quiz attempt for quiz ID: {}", quizId);
+
         return AttemptDTO.builder()
                 .id(attempt.get("id").asLong())
                 .userid(attempt.get("userid").asLong())
@@ -134,7 +135,7 @@ public class MoodleAssessmentService implements AssessmentService {
 
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add("attemptid", String.valueOf(attemptId));
-        params.add("page", "0");
+        params.add("page", "0"); // all questions are on the first page
 
         JsonNode root = moodleHttpRequest.sendRequest(params, url);
 
@@ -163,10 +164,22 @@ public class MoodleAssessmentService implements AssessmentService {
             questionDTOList.add(questionDTO);
         }
 
+        logger.info("Fetching questions for attempt ID: {}", attemptId);
+
         return QuizAttemptDataDTO.builder()
                 .attempt(attemptDTO)
                 .questions(questionDTOList)
                 .build();
+    }
+
+    public QuizAttemptDataDTO getQuizQuestions(Long quizId) throws JsonProcessingException {
+
+            AttemptDTO attempt = startQuizAttempt(quizId);
+
+            QuizAttemptDataDTO data = getAttemptData(attempt.getId());
+
+            logger.info("Retrieved {} questions", data.getQuestions().size());
+            return data;
     }
 
     private String getReadableTime(Long time) {
