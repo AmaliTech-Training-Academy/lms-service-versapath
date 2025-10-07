@@ -3,6 +3,8 @@ package com.capstone.lms_service.service.impl;
 import com.capstone.lms_service.dto.AssessmentResponseDto;
 import com.capstone.lms_service.dto.PageContentResponse;
 import com.capstone.lms_service.dto.quiz.AttemptDTO;
+import com.capstone.lms_service.dto.quiz.QuestionDTO;
+import com.capstone.lms_service.dto.quiz.QuizAttemptDataDTO;
 import com.capstone.lms_service.dto.quiz.QuizDTO;
 import com.capstone.lms_service.messaging.UpdateAssessmentProducer;
 import com.capstone.lms_service.service.AssessmentService;
@@ -124,6 +126,46 @@ public class MoodleAssessmentService implements AssessmentService {
                 .state(attempt.get("state").asText())
                 .timestart(getReadableTime(attempt.get("timestart").asLong()))
                 .timefinish(getReadableTime(attempt.get("timefinish").asLong()))
+                .build();
+    }
+
+    public QuizAttemptDataDTO getAttemptData(Long attemptId) throws JsonProcessingException {
+        String url = moodleUrl + "?wstoken=" + webToken + "&wsfunction=mod_quiz_get_attempt_data&moodlewsrestformat=json";
+
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("attemptid", String.valueOf(attemptId));
+        params.add("page", "0");
+
+        JsonNode root = moodleHttpRequest.sendRequest(params, url);
+
+        JsonNode attempt = root.get("attempt");
+        AttemptDTO attemptDTO = AttemptDTO.builder()
+                .id(attempt.get("id").asLong())
+                .userid(attempt.get("userid").asLong())
+                .attempt(attempt.get("attempt").asInt())
+                .quiz(attempt.get("quiz").asLong())
+                .state(attempt.get("state").asText())
+                .timestart(getReadableTime(attempt.get("timestart").asLong()))
+                .timefinish(getReadableTime(attempt.get("timefinish").asLong()))
+                .build();
+
+        JsonNode questions = root.get("questions");
+        List<QuestionDTO> questionDTOList = new ArrayList<>();
+
+        for(JsonNode question: questions){
+            QuestionDTO questionDTO = QuestionDTO.builder()
+                    .slot(question.get("slot").asLong())
+                    .type(question.get("type").toString())
+                    .page(question.get("page").asInt())
+                    .html(question.get("html").toString())
+                    .questionid(question.get("questionnumber").asLong())
+                    .build();
+            questionDTOList.add(questionDTO);
+        }
+
+        return QuizAttemptDataDTO.builder()
+                .attempt(attemptDTO)
+                .questions(questionDTOList)
                 .build();
     }
 
