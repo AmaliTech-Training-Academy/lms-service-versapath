@@ -17,6 +17,6 @@ public class AttemptDTO {
     private Long userid;
     private Integer attempt;
     private String state;
-    private Long timestart;
-    private Long timefinish;
+    private String timestart;
+    private String timefinish;
 }
