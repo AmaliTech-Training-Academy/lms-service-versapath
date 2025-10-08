@@ -2,6 +2,8 @@ package com.capstone.lms_service.service.impl;
 
 import com.capstone.lms_service.dto.MoodleUserResponse;
 import com.capstone.lms_service.messaging.UpdateUserProducer;
+import com.capstone.lms_service.model.UserSnapshot;
+import com.capstone.lms_service.repository.UserSnapshotRepository;
 import com.capstone.lms_service.service.UserService;
 import com.capstone.lms_service.util.MoodleHttpRequest;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -25,6 +27,7 @@ public class MoodleUserService implements UserService {
     private final MoodleHttpRequest moodleHttpRequest = new MoodleHttpRequest();
     private final ObjectMapper objectMapper = new ObjectMapper(); // convert json-object
     private final UpdateUserProducer updateUserProducer;
+    private final UserSnapshotRepository userSnapshotRepository;
 
     @Value("${MOODLE_URL}")
     private String moodleUrl;
@@ -58,6 +61,18 @@ public class MoodleUserService implements UserService {
                 new TypeReference<>() {}
         );
         sendEventCommandToUpdateUserMoodleId(users.get(0), userDto.getVersapathUserId()); // send an event command
+
+        // insert user to the database
+        UserSnapshot userSnapshot = UserSnapshot.builder()
+                .id(userDto.getVersapathUserId())
+                .email(userDto.getEmail())
+                .lastName(userDto.getLastName())
+                .firstName(userDto.getFirstName())
+                .username(userDto.getUsername())
+                .moodleUserId(users.get(0).getId().intValue())
+                .build();
+
+        userSnapshotRepository.save(userSnapshot);
 
         return users.get(0); // return the inserted user
     }
