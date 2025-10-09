@@ -35,6 +35,12 @@ public class MoodleUserService implements UserService {
     @Value("${WEBSERVICE_TOKEN}")
     private String token;
 
+    @Value("${LEARNER_SERVICE_NAME}")
+    private String serviceName;
+
+    @Value("${WEBSERVICE_TOKEN_ADMIN_QUIZ}")
+    private String adminToken;
+
     @Override
     public MoodleUserResponse createUser(ProduceUserEvent userDto) throws JsonProcessingException {
 
@@ -62,6 +68,8 @@ public class MoodleUserService implements UserService {
         );
         sendEventCommandToUpdateUserMoodleId(users.get(0), userDto.getVersapathUserId()); // send an event command
 
+        String userToken = createToken(users.get(0).getId().intValue());
+
         // insert user to the database
         UserSnapshot userSnapshot = UserSnapshot.builder()
                 .id(userDto.getVersapathUserId())
@@ -69,6 +77,7 @@ public class MoodleUserService implements UserService {
                 .lastName(userDto.getLastName())
                 .firstName(userDto.getFirstName())
                 .username(userDto.getUsername())
+                .moodleUserToken(userToken)
                 .moodleUserId(users.get(0).getId().intValue())
                 .build();
 
@@ -85,6 +94,20 @@ public class MoodleUserService implements UserService {
                         .moodleUserId(user.getId())
                         .versapathUserId(userVersapathId)
                         .build());
+    }
+
+    public String createToken(int userId) throws JsonProcessingException {
+
+        String url = moodleUrl + "?wstoken=" + adminToken + "&wsfunction=local_customtoken_create_token&moodlewsrestformat=json";
+
+        //moodle expects parameters
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("userid", String.valueOf(userId));
+        params.add("servicename", serviceName);
+
+        JsonNode root = moodleHttpRequest.sendRequest(params, url); // send request
+
+        return root.get("token").asText();
     }
 
 }
