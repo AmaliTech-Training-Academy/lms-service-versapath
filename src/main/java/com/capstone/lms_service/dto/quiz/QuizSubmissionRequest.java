@@ -15,5 +15,7 @@ import java.util.UUID;
 public class QuizSubmissionRequest {
     private UUID userId;
     private int attemptId;
+    private int totalQuestions;
+    private int qubaId; // question usage id
     private List<QuizAnswerDto> answers;
 }

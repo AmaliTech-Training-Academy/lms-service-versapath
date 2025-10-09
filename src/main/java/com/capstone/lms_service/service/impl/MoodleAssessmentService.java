@@ -207,25 +207,75 @@ public class MoodleAssessmentService implements AssessmentService {
         // save all the answers on Moodle
         saveAnswers(quizRequest, userSnapshot.getMoodleUserToken());
 
-        return null;
+        return finishAttempt(quizRequest, userSnapshot.getMoodleUserToken());
     }
 
     private void saveAnswers(QuizSubmissionRequest quizRequest, String learnerToken) throws JsonProcessingException {
-        String url = moodleUrl + "?wstoken=" + learnerToken + "&wsfunction=mod_quiz_process_attempt&moodlewsrestformat=json";
+        String url = moodleUrl + "?wstoken=" + learnerToken + "&wsfunction=mod_quiz_save_attempt&moodlewsrestformat=json";
 
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add("attemptid", String.valueOf(quizRequest.getAttemptId()));
 
-        // Moodle expected format: data[0][name] and data[0][value] to submit answer
         int index = 0;
-        for (QuizAnswerDto answer : quizRequest.getAnswers()) {
-            params.add("data[" + index + "][name]", answer.getName());
-            params.add("data[" + index + "][value]", answer.getValue());
+
+        // submit all questions in one go
+        for (int slot = 1; slot <= quizRequest.getTotalQuestions(); slot++) {
+            String fieldName = String.format("q%d:%d_answer", quizRequest.getQubaId(), slot);
+
+            String answerValue = findAnswerForSlot(quizRequest.getAnswers(), slot);
+
+            if (answerValue == null) {
+                answerValue = "";
+            }
+
+            //submit answer
+            params.add("data[" + index + "][name]", fieldName);
+            params.add("data[" + index + "][value]", answerValue);
             index++;
+
+            //submit sequence checks
+            String seqFieldName = String.format("q%d:%d_:sequencecheck", quizRequest.getQubaId(), slot);
+            params.add("data[" + index + "][name]", seqFieldName);
+            params.add("data[" + index + "][value]", "1");
+            index++;
+
+            //submit flagged state
+            String flagFieldName = String.format("q%d:%d_:flagged", quizRequest.getQubaId(), slot);
+            params.add("data[" + index + "][name]", flagFieldName);
+            params.add("data[" + index + "][value]", "0");
+            index++;
+
         }
 
         JsonNode root = moodleHttpRequest.sendRequest(params, url);
 
         logger.info("Save the answers on Moodle: {}", root);
+    }
+
+    private String findAnswerForSlot(List<QuizAnswerDto> answers, int slot) {
+        for (QuizAnswerDto answer : answers) {
+            if (answer.getQuestionSlot() == slot) {
+                return answer.getAnswerValue();
+            }
+        }
+        return null; // not answered
+    }
+
+    private QuizSubmissionResponse finishAttempt(QuizSubmissionRequest quizRequest, String learnerToken) throws JsonProcessingException {
+        String url = moodleUrl + "?wstoken=" + learnerToken + "&wsfunction=mod_quiz_process_attempt&moodlewsrestformat=json";
+
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("attemptid", String.valueOf(quizRequest.getAttemptId()));
+        params.add("finishattempt", "1"); // flag as finish and close the attempt
+        params.add("timeup", "0"); // not auto-submit
+
+        JsonNode root = moodleHttpRequest.sendRequest(params, url);
+
+        logger.info("Finished the assessment: {}", root);
+
+        return QuizSubmissionResponse.builder()
+                .attemptId(quizRequest.getAttemptId())
+                .state(root.get("state").asText())
+                .build();
     }
 }

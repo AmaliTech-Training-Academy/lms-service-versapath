@@ -10,6 +10,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class QuizAnswerDto {
-    private String name;
-    private String value;
+    private int questionSlot;
+    private String answerValue;
 }
