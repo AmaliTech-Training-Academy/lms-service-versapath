@@ -91,4 +91,17 @@ public class GlobalException {
                 .body(response);
     }
 
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ClientResponseFormatDto> handleUserNotFound(
+            UserNotFoundException exception) {
+        ClientResponseFormatDto response = ClientResponseFormatDto.builder()
+                .success(false)
+                .message(exception.getMessage())
+                .errors(null)
+                .data(null)
+                .build();
+
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+    }
+
 }
