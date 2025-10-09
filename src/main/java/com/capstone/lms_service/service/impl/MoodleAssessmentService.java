@@ -1,10 +1,7 @@
 package com.capstone.lms_service.service.impl;
 
 import com.capstone.lms_service.dto.AssessmentResponseDto;
-import com.capstone.lms_service.dto.quiz.AttemptDTO;
-import com.capstone.lms_service.dto.quiz.QuestionDTO;
-import com.capstone.lms_service.dto.quiz.QuizAttemptDataDTO;
-import com.capstone.lms_service.dto.quiz.QuizDTO;
+import com.capstone.lms_service.dto.quiz.*;
 import com.capstone.lms_service.exception.UserNotFoundException;
 import com.capstone.lms_service.messaging.UpdateAssessmentProducer;
 import com.capstone.lms_service.model.UserSnapshot;
@@ -86,6 +83,7 @@ public class MoodleAssessmentService implements AssessmentService {
         updateAssessmentProducer.sendUpdateAssessments(assessmentUpdateEvent);
     }
 
+    @Override
     public List<QuizDTO> getQuizzesByCourse(Long courseId) throws JsonProcessingException {
         String url = moodleUrl + "?wstoken=" + webToken + "&wsfunction=mod_quiz_get_quizzes_by_courses&moodlewsrestformat=json";
 
@@ -177,9 +175,10 @@ public class MoodleAssessmentService implements AssessmentService {
                 .build();
     }
 
+    @Override
     public QuizAttemptDataDTO getQuizQuestions(Long quizId, UUID userId) throws JsonProcessingException {
         UserSnapshot userSnapshot = userSnapshotRepository.findById(userId)
-                .orElseThrow( () -> new UserNotFoundException("A Skill atom provided doesn't exist")
+                .orElseThrow( () -> new UserNotFoundException("A user provide doesn't exist")
                 );
 
             AttemptDTO attempt = startQuizAttempt(quizId, userSnapshot.getMoodleUserToken());
@@ -197,5 +196,36 @@ public class MoodleAssessmentService implements AssessmentService {
             return dateTime.toString();
         }
         return null;
+    }
+
+    @Override
+    public QuizSubmissionResponse submitQuiz(QuizSubmissionRequest quizRequest) throws JsonProcessingException {
+        UserSnapshot userSnapshot = userSnapshotRepository.findById(quizRequest.getUserId())
+                .orElseThrow( () -> new UserNotFoundException("A user provided doesn't exist")
+                );
+
+        // save all the answers on Moodle
+        saveAnswers(quizRequest, userSnapshot.getMoodleUserToken());
+
+        return null;
+    }
+
+    private void saveAnswers(QuizSubmissionRequest quizRequest, String learnerToken) throws JsonProcessingException {
+        String url = moodleUrl + "?wstoken=" + learnerToken + "&wsfunction=mod_quiz_process_attempt&moodlewsrestformat=json";
+
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("attemptid", String.valueOf(quizRequest.getAttemptId()));
+
+        // Moodle expected format: data[0][name] and data[0][value] to submit answer
+        int index = 0;
+        for (QuizAnswerDto answer : quizRequest.getAnswers()) {
+            params.add("data[" + index + "][name]", answer.getName());
+            params.add("data[" + index + "][value]", answer.getValue());
+            index++;
+        }
+
+        JsonNode root = moodleHttpRequest.sendRequest(params, url);
+
+        logger.info("Save the answers on Moodle: {}", root);
     }
 }

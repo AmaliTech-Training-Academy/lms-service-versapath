@@ -3,9 +3,11 @@ package com.capstone.lms_service.controller;
 import com.capstone.lms_service.dto.*;
 import com.capstone.lms_service.dto.quiz.QuizAttemptDataDTO;
 import com.capstone.lms_service.dto.quiz.QuizDTO;
+import com.capstone.lms_service.dto.quiz.QuizSubmissionRequest;
+import com.capstone.lms_service.dto.quiz.QuizSubmissionResponse;
+import com.capstone.lms_service.service.AssessmentService;
 import com.capstone.lms_service.service.CourseService;
 import com.capstone.lms_service.service.UserService;
-import com.capstone.lms_service.service.impl.MoodleAssessmentService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +27,7 @@ import java.util.UUID;
 public class MoodleController {
     private final UserService userService;
     private final CourseService courseService;
-    private final MoodleAssessmentService moodleAssessmentService;
+    private final AssessmentService assessmentService;
 
     @PostMapping("/create-user")
     @Operation(summary = "Insert learner on moodle", description = "This is a direct endpoint to insert leaner from Versapath to moodle ")
@@ -96,7 +98,7 @@ public class MoodleController {
     @Operation(summary = "Fetch all the assessments by course id",
             description = "This is a direct endpoint to fetch assessment of a particular course from Moodle")
     public ResponseEntity<ClientResponseFormatDto> getQuizzesByCourse(@PathVariable Long courseId) throws JsonProcessingException {
-        List<QuizDTO> quizzes = moodleAssessmentService.getQuizzesByCourse(courseId);
+        List<QuizDTO> quizzes = assessmentService.getQuizzesByCourse(courseId);
         ClientResponseFormatDto response = ClientResponseFormatDto.builder()
                 .success(true)
                 .message("Assessments data fetched successfully!")
@@ -112,10 +114,24 @@ public class MoodleController {
                           "also retrieve questions related to the assessment")
     public ResponseEntity<ClientResponseFormatDto> startAssessment(@RequestParam Long quizId,
                                                            @RequestParam UUID userId) throws JsonProcessingException {
-        QuizAttemptDataDTO quizResponse = moodleAssessmentService.getQuizQuestions(quizId, userId);
+        QuizAttemptDataDTO quizResponse = assessmentService.getQuizQuestions(quizId, userId);
         ClientResponseFormatDto response = ClientResponseFormatDto.builder()
                 .success(true)
                 .message("Assessment questions retrieved successfully!")
+                .errors(null)
+                .data(Map.of("item", quizResponse))
+                .build();
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @PostMapping("assessments/submit")
+    @Operation(summary = "Submit the assessment",
+            description = "This endpoint enables learner to submit their assessment")
+    public ResponseEntity<ClientResponseFormatDto> submitAssessment(@RequestBody QuizSubmissionRequest request) throws JsonProcessingException {
+        QuizSubmissionResponse quizResponse = assessmentService.submitQuiz(request);
+        ClientResponseFormatDto response = ClientResponseFormatDto.builder()
+                .success(true)
+                .message("Assessment submitted successfully!")
                 .errors(null)
                 .data(Map.of("item", quizResponse))
                 .build();
