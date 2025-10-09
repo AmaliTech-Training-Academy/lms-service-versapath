@@ -5,7 +5,10 @@ import com.capstone.lms_service.dto.quiz.AttemptDTO;
 import com.capstone.lms_service.dto.quiz.QuestionDTO;
 import com.capstone.lms_service.dto.quiz.QuizAttemptDataDTO;
 import com.capstone.lms_service.dto.quiz.QuizDTO;
+import com.capstone.lms_service.exception.UserNotFoundException;
 import com.capstone.lms_service.messaging.UpdateAssessmentProducer;
+import com.capstone.lms_service.model.UserSnapshot;
+import com.capstone.lms_service.repository.UserSnapshotRepository;
 import com.capstone.lms_service.service.AssessmentService;
 import com.capstone.lms_service.util.MoodleHttpRequest;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -25,6 +28,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +36,7 @@ public class MoodleAssessmentService implements AssessmentService {
     private static final Logger logger = LoggerFactory.getLogger(MoodleAssessmentService.class);
     private final MoodleHttpRequest moodleHttpRequest = new MoodleHttpRequest();
     private final UpdateAssessmentProducer updateAssessmentProducer;
+    private final UserSnapshotRepository userSnapshotRepository;
 
     @Value("${MOODLE_URL}")
     private String moodleUrl;
@@ -108,8 +113,8 @@ public class MoodleAssessmentService implements AssessmentService {
         return quizDTOList;
     }
 
-    public AttemptDTO startQuizAttempt(Long quizId) throws JsonProcessingException {
-        String url = moodleUrl + "?wstoken=" + webToken + "&wsfunction=mod_quiz_start_attempt&moodlewsrestformat=json";
+    public AttemptDTO startQuizAttempt(Long quizId, String learnerToken) throws JsonProcessingException {
+        String url = moodleUrl + "?wstoken=" + learnerToken + "&wsfunction=mod_quiz_start_attempt&moodlewsrestformat=json";
 
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add("quizid", String.valueOf(quizId));
@@ -130,8 +135,8 @@ public class MoodleAssessmentService implements AssessmentService {
                 .build();
     }
 
-    public QuizAttemptDataDTO getAttemptData(Long attemptId) throws JsonProcessingException {
-        String url = moodleUrl + "?wstoken=" + webToken + "&wsfunction=mod_quiz_get_attempt_data&moodlewsrestformat=json";
+    public QuizAttemptDataDTO getAttemptData(Long attemptId, String learnerToken) throws JsonProcessingException {
+        String url = moodleUrl + "?wstoken=" + learnerToken + "&wsfunction=mod_quiz_get_attempt_data&moodlewsrestformat=json";
 
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add("attemptid", String.valueOf(attemptId));
@@ -172,11 +177,14 @@ public class MoodleAssessmentService implements AssessmentService {
                 .build();
     }
 
-    public QuizAttemptDataDTO getQuizQuestions(Long quizId) throws JsonProcessingException {
+    public QuizAttemptDataDTO getQuizQuestions(Long quizId, UUID userId) throws JsonProcessingException {
+        UserSnapshot userSnapshot = userSnapshotRepository.findById(userId)
+                .orElseThrow( () -> new UserNotFoundException("A Skill atom provided doesn't exist")
+                );
 
-            AttemptDTO attempt = startQuizAttempt(quizId);
+            AttemptDTO attempt = startQuizAttempt(quizId, userSnapshot.getMoodleUserToken());
 
-            QuizAttemptDataDTO data = getAttemptData(attempt.getId());
+            QuizAttemptDataDTO data = getAttemptData(attempt.getId(), userSnapshot.getMoodleUserToken());
 
             logger.info("Retrieved {} questions", data.getQuestions().size());
             return data;

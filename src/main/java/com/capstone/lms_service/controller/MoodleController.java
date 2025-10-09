@@ -1,7 +1,6 @@
 package com.capstone.lms_service.controller;
 
 import com.capstone.lms_service.dto.*;
-import com.capstone.lms_service.dto.quiz.AttemptDTO;
 import com.capstone.lms_service.dto.quiz.QuizAttemptDataDTO;
 import com.capstone.lms_service.dto.quiz.QuizDTO;
 import com.capstone.lms_service.service.CourseService;
@@ -18,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
@@ -106,26 +106,13 @@ public class MoodleController {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
-    @PostMapping("assessments/{quizId}/start")
-    @Operation(summary = "Start assessment",
-            description = "This endpoint is the start of an assessment based on the attempt number")
-    public ResponseEntity<ClientResponseFormatDto> startQuizAttempt(@PathVariable Long quizId) throws JsonProcessingException {
-        AttemptDTO attempt = moodleAssessmentService.startQuizAttempt(quizId);
-        ClientResponseFormatDto response = ClientResponseFormatDto.builder()
-                .success(true)
-                .message("Assessment has started!")
-                .errors(null)
-                .data(Map.of("item", attempt))
-                .build();
-        return ResponseEntity.status(HttpStatus.OK).body(response);
-    }
-
-    @PostMapping("assessments/{quizId}/questions")
+    @PostMapping("assessments/get-started")
     @Operation(summary = "Retrieve assessment questions",
             description = "This endpoint is the start of an assessment based on the attempt number and " +
                           "also retrieve questions related to the assessment")
-    public ResponseEntity<ClientResponseFormatDto> attempt(@PathVariable Long quizId) throws JsonProcessingException {
-        QuizAttemptDataDTO quizResponse = moodleAssessmentService.getQuizQuestions(quizId);
+    public ResponseEntity<ClientResponseFormatDto> startAssessment(@RequestParam Long quizId,
+                                                           @RequestParam UUID userId) throws JsonProcessingException {
+        QuizAttemptDataDTO quizResponse = moodleAssessmentService.getQuizQuestions(quizId, userId);
         ClientResponseFormatDto response = ClientResponseFormatDto.builder()
                 .success(true)
                 .message("Assessment questions retrieved successfully!")
