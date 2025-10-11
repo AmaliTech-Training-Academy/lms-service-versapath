@@ -38,6 +38,9 @@ public class RabbitMQConfig {
     @Value("${ASSESSMENT_UPDATE_QUEUE}")
     private String assessmentUpdateQueue;
 
+    @Value("${ASSESSMENT_RESULT_QUEUE}")
+    private String assessmentResultQueue;
+
     @Bean
     public Jackson2JsonMessageConverter jackson2JsonMessageConverter() {
         return new Jackson2JsonMessageConverter();
@@ -95,5 +98,11 @@ public class RabbitMQConfig {
     public Queue updateAssessmentQueue() {
         return new Queue(assessmentUpdateQueue, true);
     }
+
+    @Bean
+    public Queue getAssessmentResultQueue() {
+        return new Queue(assessmentResultQueue, true);
+    }
+
 
 }
