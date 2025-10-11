@@ -272,10 +272,40 @@ public class MoodleAssessmentService implements AssessmentService {
         JsonNode root = moodleHttpRequest.sendRequest(params, url);
 
         logger.info("Finished the assessment: {}", root);
+        QuizResultDTO quizResult = getGradeInfo(quizRequest.getAttemptId());
 
         return QuizSubmissionResponse.builder()
                 .attemptId(quizRequest.getAttemptId())
+                .grade(quizResult.getGrade())
                 .state(root.get("state").asText())
                 .build();
+    }
+
+    public QuizResultDTO getGradeInfo(int attemptId) throws JsonProcessingException {
+        String url = moodleUrl + "?wstoken=" + webToken + "&wsfunction=mod_quiz_get_attempt_review&moodlewsrestformat=json";
+
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("attemptid", String.valueOf(attemptId));
+
+        JsonNode root = moodleHttpRequest.sendRequest(params, url);
+
+        logger.info("Retrieved quiz info: {}", root);
+
+        return QuizResultDTO.builder()
+                .grade(root.get("grade").asDouble())
+                .quizId(root.get("quizid").asInt())
+                .attemptNumber(root.get("attempt").asInt())
+                .timeStart(getReadableDateTime(root.get("timestart").asLong()))
+                .timeFinish(getReadableDateTime(root.get("timefinish").asLong()))
+                .build();
+
+    }
+
+    private LocalDateTime getReadableDateTime(Long time) {
+        if (time != null) {
+            Instant instant = Instant.ofEpochSecond(time);
+            return LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
+        }
+        return null;
     }
 }
