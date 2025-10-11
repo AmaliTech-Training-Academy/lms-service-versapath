@@ -1,9 +1,6 @@
 package com.capstone.lms_service.service;
 
-import com.capstone.lms_service.dto.quiz.QuizAttemptDataDTO;
-import com.capstone.lms_service.dto.quiz.QuizDTO;
-import com.capstone.lms_service.dto.quiz.QuizSubmissionRequest;
-import com.capstone.lms_service.dto.quiz.QuizSubmissionResponse;
+import com.capstone.lms_service.dto.quiz.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.common.event.AssessmentEvent;
 

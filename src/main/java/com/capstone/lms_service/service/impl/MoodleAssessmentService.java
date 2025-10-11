@@ -3,6 +3,7 @@ package com.capstone.lms_service.service.impl;
 import com.capstone.lms_service.dto.AssessmentResponseDto;
 import com.capstone.lms_service.dto.quiz.*;
 import com.capstone.lms_service.exception.UserNotFoundException;
+import com.capstone.lms_service.messaging.AssessmentResultProducer;
 import com.capstone.lms_service.messaging.UpdateAssessmentProducer;
 import com.capstone.lms_service.model.UserSnapshot;
 import com.capstone.lms_service.repository.UserSnapshotRepository;
@@ -12,6 +13,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import org.common.event.AssessmentEvent;
+import org.common.event.AssessmentResultEvent;
 import org.common.event.AssessmentUpdateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +35,9 @@ public class MoodleAssessmentService implements AssessmentService {
     private static final Logger logger = LoggerFactory.getLogger(MoodleAssessmentService.class);
     private final MoodleHttpRequest moodleHttpRequest = new MoodleHttpRequest();
     private final UpdateAssessmentProducer updateAssessmentProducer;
+    private final AssessmentResultProducer assessmentResultProducer;
     private final UserSnapshotRepository userSnapshotRepository;
+
 
     @Value("${MOODLE_URL}")
     private String moodleUrl;
@@ -274,6 +278,8 @@ public class MoodleAssessmentService implements AssessmentService {
         logger.info("Finished the assessment: {}", root);
         QuizResultDTO quizResult = getGradeInfo(quizRequest.getAttemptId());
 
+        publishAssessmentResultEvent(learnerToken, quizResult);
+
         return QuizSubmissionResponse.builder()
                 .attemptId(quizRequest.getAttemptId())
                 .grade(quizResult.getGrade())
@@ -293,10 +299,10 @@ public class MoodleAssessmentService implements AssessmentService {
 
         return QuizResultDTO.builder()
                 .grade(root.get("grade").asDouble())
-                .quizId(root.get("quizid").asInt())
-                .attemptNumber(root.get("attempt").asInt())
-                .timeStart(getReadableDateTime(root.get("timestart").asLong()))
-                .timeFinish(getReadableDateTime(root.get("timefinish").asLong()))
+                .quizId(root.get("attempt").get("quiz").asInt())
+                .attemptNumber(root.get("attempt").get("attempt").asInt())
+                .timeStart(getReadableDateTime(root.get("attempt").get("timestart").asLong()))
+                .timeFinish(getReadableDateTime(root.get("attempt").get("timefinish").asLong()))
                 .build();
 
     }
@@ -307,5 +313,22 @@ public class MoodleAssessmentService implements AssessmentService {
             return LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
         }
         return null;
+    }
+
+    void publishAssessmentResultEvent(String learnerToken, QuizResultDTO quizResult ){
+        UserSnapshot learner = userSnapshotRepository.findUserSnapshotByMoodleUserToken(learnerToken)
+                .orElseThrow(()-> new UserNotFoundException("User provide doesn't exist!!"));
+
+        AssessmentResultEvent assessmentResultEvent = AssessmentResultEvent.builder()
+                .userId(learner.getId())
+                .grade(quizResult.getGrade())
+                .attemptNumber(quizResult.getAttemptNumber())
+                .moodleQuizId(quizResult.getQuizId())
+                .timeFinish(quizResult.getTimeFinish())
+                .timeStart(quizResult.getTimeStart())
+                .build();
+
+        assessmentResultProducer.sendAssessmentResult(assessmentResultEvent);
+
     }
 }
